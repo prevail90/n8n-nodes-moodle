@@ -13,7 +13,7 @@ git clone https://github.com/moodlehq/moodle-docker.git
 cd moodle-docker
 ```
 
-**2. Set up environment variables**
+**Set up environment variables**
 
 ```
 # Set the path where you want Moodle code (or where it already exists)
@@ -29,7 +29,7 @@ export MOODLE_DOCKER_PHP_VERSION=8.2
 export MOODLE_DOCKER_WEB_PORT=8000
 ```
 
-### **3. Get Moodle code**
+### **Get Moodle code**
 
 If you don't already have Moodle code:
 
@@ -37,16 +37,21 @@ If you don't already have Moodle code:
 git clone -b main https://github.com/moodle/moodle moodle
 ```
 
-**4. Configure Moodle for Docker**
+**Configure Moodle for Docker**
 
 ```
 # Copy the Docker-specific config template
 cp config.docker-template.php $MOODLE_DOCKER_WWWROOT/config.php
 ```
 
-**5. Start the containers**
-
+**Start the containers**
 ```
+# Start up containers
+bin/moodle-docker-compose up -d
+
+# Wait for DB to come up (important for oracle/mssql)
+bin/moodle-docker-wait-for-db
+
 # Install Moodle database
 bin/moodle-docker-compose exec webserver php admin/cli/install_database.php \
   --agree-license \
