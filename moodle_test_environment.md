@@ -147,7 +147,7 @@ http://localhost:8000/webservice/rest/server.php?wstoken=TOKEN_HERE&wsfunction=c
 
 ## **Troubleshooting Tips**
 
-1. **Port conflicts:** Change `MOODLE_DOCKER_WEB_PORT` if 8000 is in use
+1. **Port conflicts:** Change `MOODLE_DOCKER_WEB_PORT` if 8000 is in use, use 0.0.0.0:8000 to listen at all interfaces
 2. **Permission issues:** Make sure your user is in the docker group
 3. **Session issues:** Clear all cookies for localhost if you're being logged off continuously [GitHub - moodlehq/moodle-docker: A docker environment for moodle developers](https://github.com/moodlehq/moodle-docker)
 
