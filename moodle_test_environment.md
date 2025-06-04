@@ -139,6 +139,12 @@ bin/moodle-docker-compose restart webserver
 # Moodle API key
 Visit http://localhost:8000/admin/webservice/tokens.php and create one for n8n connectivity
 
+# Enable Web Services
+http://localhost:8000/admin/settings.php?section=optionalsubsystems
+
+# Test
+http://localhost:8000/webservice/rest/server.php?wstoken=TOKEN_HERE&wsfunction=core_webservice_get_site_info&moodlewsrestformat=json
+
 ## **Troubleshooting Tips**
 
 1. **Port conflicts:** Change `MOODLE_DOCKER_WEB_PORT` if 8000 is in use
