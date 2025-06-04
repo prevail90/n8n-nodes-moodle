@@ -131,6 +131,8 @@ bin/moodle-docker-compose exec webserver docker-php-ext-enable xdebug
 bin/moodle-docker-compose restart webserver
 ```
 
+# Moodle API key
+Visit http://localhost:8000/admin/webservice/tokens.php and create one for n8n connectivity
 
 ## **Troubleshooting Tips**
 
@@ -139,5 +141,4 @@ bin/moodle-docker-compose restart webserver
 3. **Session issues:** Clear all cookies for localhost if you're being logged off continuously [GitHub - moodlehq/moodle-docker: A docker environment for moodle developers](https://github.com/moodlehq/moodle-docker)
 
 This setup gives you a full Moodle testing environment with all supported database servers, Behat/Selenium configuration, and all PHP extensions enabled [GitHub - moodlehq/moodle-docker: A docker environment for moodle developers](https://github.com/moodlehq/moodle-docker)
-
 
