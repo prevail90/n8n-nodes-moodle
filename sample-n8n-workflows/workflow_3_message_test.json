@@ -1,0 +1,88 @@
+{
+  "name": "Moodle - Message Test",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1e3f4a5b-6c7d-8e9f-0a1b-2c3d4e5f6a7b",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        300,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "messageToUserId": 2,
+        "messageText": "Hello! This is a test message from your n8n Moodle automation. The integration is working correctly! 🎉"
+      },
+      "id": "2f4a5b6c-7d8e-9f0a-1b2c-3d4e5f6a7b8c",
+      "name": "Send Test Message",
+      "type": "moodle",
+      "typeVersion": 1,
+      "position": [
+        520,
+        300
+      ],
+      "credentials": {
+        "moodleApi": {
+          "id": "moodle_api_credentials",
+          "name": "Moodle API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "enrollment",
+        "operation": "enroll",
+        "enrollUserId": 2,
+        "enrollCourseId": 1,
+        "roleId": 5
+      },
+      "id": "3a5b6c7d-8e9f-0a1b-2c3d-4e5f6a7b8c9d",
+      "name": "Test Enrollment",
+      "type": "moodle",
+      "typeVersion": 1,
+      "position": [
+        740,
+        300
+      ],
+      "credentials": {
+        "moodleApi": {
+          "id": "moodle_api_credentials",
+          "name": "Moodle API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send Test Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Test Message": {
+      "main": [
+        [
+          {
+            "node": "Test Enrollment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1.0"
+}

@@ -1,0 +1,170 @@
+{
+  "name": "Moodle - Automated Course Enrollment",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "new-user",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "b3ba6e7c-5a4a-4b5a-9e58-8c8b5a4a4b5a",
+      "name": "New User Registration",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "c7f0b3b0-7b1a-4b5a-9e58-8c8b5a4a4b5a"
+    },
+    {
+      "parameters": {
+        "resource": "user",
+        "operation": "create",
+        "username": "={{$json.username}}",
+        "password": "={{$json.password}}",
+        "firstname": "={{$json.firstname}}",
+        "lastname": "={{$json.lastname}}",
+        "email": "={{$json.email}}"
+      },
+      "id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
+      "name": "Create User in Moodle",
+      "type": "n8n-nodes-moodle.moodle",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "moodleApi": {
+          "id": "1",
+          "name": "Moodle API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "course",
+        "operation": "getAll"
+      },
+      "id": "f1e2d3c4-b5a6-9h8g-7f6e-5d4c3b2a1f0e",
+      "name": "Get Available Courses",
+      "type": "n8n-nodes-moodle.moodle",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "moodleApi": {
+          "id": "1",
+          "name": "Moodle API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter courses for default enrollment\nconst defaultCourses = items.filter(course => \n  course.json.shortname && (\n    course.json.shortname.toLowerCase().includes('orientation') || \n    course.json.shortname.toLowerCase().includes('welcome') ||\n    course.json.shortname.toLowerCase().includes('intro')\n  )\n);\n\n// If no default courses found, return the first course as fallback\nif (defaultCourses.length === 0 && items.length > 0) {\n  return [items[0]];\n}\n\nreturn defaultCourses;"
+      },
+      "id": "g2f3e4d5-c6b7-a8h9-0i1j-2k3l4m5n6o7p",
+      "name": "Filter Default Courses",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "resource": "enrollment",
+        "operation": "enroll",
+        "enrollUserId": "={{$('Create User in Moodle').item.json[0].id}}",
+        "enrollCourseId": "={{$json.id}}",
+        "roleId": 5
+      },
+      "id": "h3g4f5e6-d7c8-b9a0-1h2i-3j4k5l6m7n8o",
+      "name": "Enroll in Default Courses",
+      "type": "n8n-nodes-moodle.moodle",
+      "typeVersion": 1,
+      "position": [1120, 300],
+      "credentials": {
+        "moodleApi": {
+          "id": "1",
+          "name": "Moodle API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "messageToUserId": "={{$('Create User in Moodle').item.json[0].id}}",
+        "messageText": "🎉 Welcome to our learning platform!\n\nYour account has been created successfully and you've been enrolled in your courses.\n\nUsername: {{$('New User Registration').item.json.username}}\nPlease log in to get started with your learning journey!\n\nIf you have any questions, don't hesitate to reach out to our support team."
+      },
+      "id": "i4h5g6f7-e8d9-c0b1-a2h3-4i5j6k7l8m9n",
+      "name": "Send Welcome Message",
+      "type": "n8n-nodes-moodle.moodle",
+      "typeVersion": 1,
+      "position": [1340, 300],
+      "credentials": {
+        "moodleApi": {
+          "id": "1",
+          "name": "Moodle API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "New User Registration": {
+      "main": [
+        [
+          {
+            "node": "Create User in Moodle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create User in Moodle": {
+      "main": [
+        [
+          {
+            "node": "Get Available Courses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Available Courses": {
+      "main": [
+        [
+          {
+            "node": "Filter Default Courses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Default Courses": {
+      "main": [
+        [
+          {
+            "node": "Enroll in Default Courses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enroll in Default Courses": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "meta": {
+    "instanceId": "localhost"
+  }
+}
