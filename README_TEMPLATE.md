@@ -1,8 +1,10 @@
-# n8n-nodes-_node-name_
+![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
 
-This is an n8n community node. It lets you use _app/service name_ in your n8n workflows.
+# n8n-nodes-moodle
 
-_App/service name_ is _one or two sentences describing the service this node integrates with_.
+This is an n8n community node. It lets you use Moodle functions in your n8n workflows.
+
+Moodle is a widely used open-source learning management system (LMS) designed to help educators create and manage online courses. It provides tools for delivering content, facilitating communication, tracking progress, and assessing learners in both academic and corporate environments.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
@@ -20,15 +22,53 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 
 ## Operations
 
-_List the operations supported by your node._
+#### Core Functions (17 total)
+User Management (4 functions):
+
+core_user_create_users
+core_user_get_users_by_field
+core_user_update_users
+core_user_delete_users
+
+#### Course Management (7 functions):
+
+core_course_create_courses
+core_course_get_courses
+core_course_get_course_by_field
+core_course_update_courses
+core_course_delete_courses
+core_course_get_enrolled_users
+core_course_get_categories
+
+#### Enrollment Management (4 functions):
+
+enrol_manual_enrol_users
+enrol_manual_unenrol_users
+core_enrol_get_users_courses
+core_enrol_get_enrolled_users
+
+#### Grade Management (3 functions):
+
+core_grades_get_grades
+gradereport_overview_get_course_grades
+core_grade_get_grade_items
+
+#### Messaging (2 functions):
+
+core_message_send_instant_messages
+core_message_get_messages
+
+#### Utility (1 function):
+
+core_webservice_get_site_info
 
 ## Credentials
 
-_If users need to authenticate with the app/service, provide details here. You should include prerequisites (such as signing up with the service), available authentication methods, and how to set them up._
+Define the Moodle URL (e.g. https://moodle.mytraininginstitude.com) and Web Service Token (e.g. fa7b23c91e1f4b408e5d2a79b467ec31) Web Service Token can be created at Moodle side, visiting Site Administration -> Server -> Manage Tokens
 
 ## Compatibility
 
-_State the minimum n8n version, as well as which versions you test against. You can also include any known version incompatibility issues._
+Tested versions: n8n v 1.95.3 Moodle 5.1dev (Build: 20250530)
 
 ## Usage
 
@@ -39,10 +79,15 @@ _By the time users are looking for community nodes, they probably already know n
 ## Resources
 
 * [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-* _Link to app/service documentation._
+* [Moodle Dev API Guides](https://moodledev.io/docs/5.1/apis)
 
-## Version history
+## Credits
 
-_This is another optional section. If your node has multiple versions, include a short description of available versions and what changed, as well as any compatibility impact._
+This project was developed collaboratively with assistance from Claude (Anthropic's AI assistant) for:
+- API integration architecture and HTTP request formatting
+- Comprehensive workflow design and use case implementation
+- Docker networking solutions and debugging approaches
+- Moodle API parameter formatting and error handling
 
-
+The development involved extensive problem-solving, testing, and iterative improvements 
+to create a production-ready Moodle integration for n8n.
