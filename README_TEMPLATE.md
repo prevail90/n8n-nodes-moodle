@@ -70,12 +70,6 @@ Define the Moodle URL (e.g. https://moodle.mytraininginstitude.com) and Web Serv
 
 Tested versions: n8n v 1.95.3 Moodle 5.1dev (Build: 20250530)
 
-## Usage
-
-_This is an optional section. Use it to help users with any difficult or confusing aspects of the node._
-
-_By the time users are looking for community nodes, they probably already know n8n basics. But if you expect new users, you can link to the [Try it out](https://docs.n8n.io/try-it-out/) documentation to help them get started._
-
 ## Resources
 
 * [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
