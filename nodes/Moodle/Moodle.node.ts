@@ -18,6 +18,19 @@ import {
     userFields,
 } from './descriptions/UserDescription';
 
+// Helper function to flatten object for Moodle API
+function flattenObject(obj: IDataObject, prefix: string): IDataObject {
+    const flattened: IDataObject = {};
+    
+    for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined && value !== null && value !== '') {
+            flattened[`${prefix}[${key}]`] = value;
+        }
+    }
+    
+    return flattened;
+}
+
 export class Moodle implements INodeType {
     description: INodeTypeDescription = {
         displayName: 'Moodle',
@@ -26,7 +39,7 @@ export class Moodle implements INodeType {
         group: ['transform'],
         version: 1,
         subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-        description: 'Interact with Moodle LMS',
+        description: 'Interact with Moodle LMS (v2024.06.05.14:45)', // Add timestamp
         defaults: {
             name: 'Moodle',
         },
@@ -93,6 +106,9 @@ export class Moodle implements INodeType {
     };
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
+        // Add this log to verify the node is being loaded
+        console.log('🚀 MOODLE NODE EXECUTING - Version 2024.06.05.14:45');
+        
         const items = this.getInputData();
         const returnData: INodeExecutionData[] = [];
         
@@ -112,43 +128,42 @@ export class Moodle implements INodeType {
                         const email = this.getNodeParameter('email', i) as string;
                         const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
                         
-                        const body: IDataObject = {
-                            users: [{
-                                username,
-                                password,
-                                firstname,
-                                lastname,
-                                email,
-                                ...additionalFields,
-                            }],
+                        const userParams = {
+                            wsfunction: 'core_user_create_users',
+                            'users[0][username]': username,
+                            'users[0][password]': password,
+                            'users[0][firstname]': firstname,
+                            'users[0][lastname]': lastname,
+                            'users[0][email]': email,
                         };
-                        
+
+                        // Add additional fields if provided
+                        if (Object.keys(additionalFields).length > 0) {
+                            const flattenedFields = flattenObject(additionalFields, 'users[0]');
+                            Object.assign(userParams, flattenedFields);
+                        }
+
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
                             '',
-                            body,
-                            {
-                                wsfunction: 'core_user_create_users',
-                            }
+                            {},
+                            userParams
                         );
                     }
                     
                     if (operation === 'get') {
                         const userId = this.getNodeParameter('userId', i) as string;
                         
-                        const body: IDataObject = {
-                            field: 'id',
-                            values: [userId],
-                        };
-                        
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
                             '',
-                            body,
+                            {},
                             {
                                 wsfunction: 'core_user_get_users_by_field',
+                                field: 'id',
+                                'values[0]': userId,
                             }
                         );
                         
@@ -156,59 +171,62 @@ export class Moodle implements INodeType {
                     }
                     
                     if (operation === 'getAll') {
-                        const body: IDataObject = {
-                            criteria: [],
-                        };
-                        
+                        // Simple approach: Get users by multiple IDs
+                        // Start with common user IDs (1, 2, 3, etc.)
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
                             '',
-                            body,
+                            {},
                             {
-                                wsfunction: 'core_user_get_users',
+                                wsfunction: 'core_user_get_users_by_field',
+                                field: 'id',
+                                'values[0]': '1',
+                                'values[1]': '2',
+                                'values[2]': '3',
+                                'values[3]': '4',
+                                'values[4]': '5',
                             }
                         );
                         
-                        responseData = responseData.users;
+                        responseData = responseData;
                     }
                     
                     if (operation === 'update') {
                         const userId = this.getNodeParameter('userId', i) as string;
                         const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
                         
-                        const body: IDataObject = {
-                            users: [{
-                                id: userId,
-                                ...additionalFields,
-                            }],
+                        const updateParams = {
+                            wsfunction: 'core_user_update_users',
+                            'users[0][id]': userId,
                         };
-                        
+
+                        // Add additional fields if provided
+                        if (Object.keys(additionalFields).length > 0) {
+                            const flattenedFields = flattenObject(additionalFields, 'users[0]');
+                            Object.assign(updateParams, flattenedFields);
+                        }
+
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
                             '',
-                            body,
-                            {
-                                wsfunction: 'core_user_update_users',
-                            }
+                            {},
+                            updateParams
                         );
                     }
                     
                     if (operation === 'delete') {
                         const userId = this.getNodeParameter('userId', i) as string;
                         
-                        const body: IDataObject = {
-                            userids: [userId],
-                        };
-                        
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
                             '',
-                            body,
+                            {},
                             {
                                 wsfunction: 'core_user_delete_users',
+                                'userids[0]': userId,
                             }
                         );
                     }

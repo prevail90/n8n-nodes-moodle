@@ -47,6 +47,7 @@ exports.userOperations = [
     },
 ];
 exports.userFields = [
+    // Create operation fields
     {
         displayName: 'Username',
         name: 'username',
@@ -120,6 +121,7 @@ exports.userFields = [
         default: '',
         description: 'The email address of the user',
     },
+    // Get operation fields
     {
         displayName: 'User ID',
         name: 'userId',
@@ -134,6 +136,7 @@ exports.userFields = [
         default: '',
         description: 'The ID of the user',
     },
+    // Additional fields for create/update
     {
         displayName: 'Additional Fields',
         name: 'additionalFields',
@@ -199,4 +202,3 @@ exports.userFields = [
         ],
     },
 ];
-//# sourceMappingURL=UserDescription.js.map

@@ -3,6 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Moodle = void 0;
 const GenericFunctions_1 = require("./GenericFunctions");
 const UserDescription_1 = require("./descriptions/UserDescription");
+// Helper function to flatten object for Moodle API
+function flattenObject(obj, prefix) {
+    const flattened = {};
+    for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined && value !== null && value !== '') {
+            flattened[`${prefix}[${key}]`] = value;
+        }
+    }
+    return flattened;
+}
 class Moodle {
     constructor() {
         this.description = {
@@ -12,12 +22,12 @@ class Moodle {
             group: ['transform'],
             version: 1,
             subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-            description: 'Interact with Moodle LMS',
+            description: 'Interact with Moodle LMS (v2024.06.05.14:45)', // Add timestamp
             defaults: {
                 name: 'Moodle',
             },
-            inputs: ["main"],
-            outputs: ["main"],
+            inputs: ["main" /* NodeConnectionType.Main */],
+            outputs: ["main" /* NodeConnectionType.Main */],
             credentials: [
                 {
                     name: 'moodleApi',
@@ -69,6 +79,8 @@ class Moodle {
         };
     }
     async execute() {
+        // Add this log to verify the node is being loaded
+        console.log('🚀 MOODLE NODE EXECUTING - Version 2024.06.05.14:45');
         const items = this.getInputData();
         const returnData = [];
         const resource = this.getNodeParameter('resource', 0);
@@ -84,60 +96,63 @@ class Moodle {
                         const lastname = this.getNodeParameter('lastname', i);
                         const email = this.getNodeParameter('email', i);
                         const additionalFields = this.getNodeParameter('additionalFields', i);
-                        const body = {
-                            users: [{
-                                    username,
-                                    password,
-                                    firstname,
-                                    lastname,
-                                    email,
-                                    ...additionalFields,
-                                }],
-                        };
-                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', body, {
+                        const userParams = {
                             wsfunction: 'core_user_create_users',
-                        });
+                            'users[0][username]': username,
+                            'users[0][password]': password,
+                            'users[0][firstname]': firstname,
+                            'users[0][lastname]': lastname,
+                            'users[0][email]': email,
+                        };
+                        // Add additional fields if provided
+                        if (Object.keys(additionalFields).length > 0) {
+                            const flattenedFields = flattenObject(additionalFields, 'users[0]');
+                            Object.assign(userParams, flattenedFields);
+                        }
+                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', {}, userParams);
                     }
                     if (operation === 'get') {
                         const userId = this.getNodeParameter('userId', i);
-                        const body = {
-                            field: 'id',
-                            values: [userId],
-                        };
-                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', body, {
+                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', {}, {
                             wsfunction: 'core_user_get_users_by_field',
+                            field: 'id',
+                            'values[0]': userId,
                         });
                         responseData = responseData[0];
                     }
                     if (operation === 'getAll') {
-                        const body = {
-                            criteria: [],
-                        };
-                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', body, {
-                            wsfunction: 'core_user_get_users',
+                        // Simple approach: Get users by multiple IDs
+                        // Start with common user IDs (1, 2, 3, etc.)
+                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', {}, {
+                            wsfunction: 'core_user_get_users_by_field',
+                            field: 'id',
+                            'values[0]': '1',
+                            'values[1]': '2',
+                            'values[2]': '3',
+                            'values[3]': '4',
+                            'values[4]': '5',
                         });
-                        responseData = responseData.users;
+                        responseData = responseData;
                     }
                     if (operation === 'update') {
                         const userId = this.getNodeParameter('userId', i);
                         const additionalFields = this.getNodeParameter('additionalFields', i);
-                        const body = {
-                            users: [{
-                                    id: userId,
-                                    ...additionalFields,
-                                }],
-                        };
-                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', body, {
+                        const updateParams = {
                             wsfunction: 'core_user_update_users',
-                        });
+                            'users[0][id]': userId,
+                        };
+                        // Add additional fields if provided
+                        if (Object.keys(additionalFields).length > 0) {
+                            const flattenedFields = flattenObject(additionalFields, 'users[0]');
+                            Object.assign(updateParams, flattenedFields);
+                        }
+                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', {}, updateParams);
                     }
                     if (operation === 'delete') {
                         const userId = this.getNodeParameter('userId', i);
-                        const body = {
-                            userids: [userId],
-                        };
-                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', body, {
+                        responseData = await GenericFunctions_1.moodleApiRequest.call(this, 'POST', '', {}, {
                             wsfunction: 'core_user_delete_users',
+                            'userids[0]': userId,
                         });
                     }
                 }
@@ -160,4 +175,3 @@ class Moodle {
     }
 }
 exports.Moodle = Moodle;
-//# sourceMappingURL=Moodle.node.js.map

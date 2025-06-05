@@ -31,4 +31,3 @@ class MoodleApi {
     }
 }
 exports.MoodleApi = MoodleApi;
-//# sourceMappingURL=MoodleApi.credentials.js.map
