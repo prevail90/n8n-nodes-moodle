@@ -13,7 +13,7 @@ git clone https://github.com/moodlehq/moodle-docker.git
 cd moodle-docker
 ```
 
-**2. Set up environment variables**
+**Set up environment variables**
 
 ```
 # Set the path where you want Moodle code (or where it already exists)
@@ -29,7 +29,7 @@ export MOODLE_DOCKER_PHP_VERSION=8.2
 export MOODLE_DOCKER_WEB_PORT=8000
 ```
 
-### **3. Get Moodle code**
+### **Get Moodle code**
 
 If you don't already have Moodle code:
 
@@ -37,16 +37,21 @@ If you don't already have Moodle code:
 git clone -b main https://github.com/moodle/moodle moodle
 ```
 
-**4. Configure Moodle for Docker**
+**Configure Moodle for Docker**
 
 ```
 # Copy the Docker-specific config template
 cp config.docker-template.php $MOODLE_DOCKER_WWWROOT/config.php
 ```
 
-**5. Start the containers**
-
+**Start the containers**
 ```
+# Start up containers
+bin/moodle-docker-compose up -d
+
+# Wait for DB to come up (important for oracle/mssql)
+bin/moodle-docker-wait-for-db
+
 # Install Moodle database
 bin/moodle-docker-compose exec webserver php admin/cli/install_database.php \
   --agree-license \
@@ -134,9 +139,15 @@ bin/moodle-docker-compose restart webserver
 # Moodle API key
 Visit http://localhost:8000/admin/webservice/tokens.php and create one for n8n connectivity
 
+# Enable Web Services
+http://localhost:8000/admin/settings.php?section=optionalsubsystems
+
+# Test
+http://localhost:8000/webservice/rest/server.php?wstoken=TOKEN_HERE&wsfunction=core_webservice_get_site_info&moodlewsrestformat=json
+
 ## **Troubleshooting Tips**
 
-1. **Port conflicts:** Change `MOODLE_DOCKER_WEB_PORT` if 8000 is in use
+1. **Port conflicts:** Change `MOODLE_DOCKER_WEB_PORT` if 8000 is in use, use 0.0.0.0:8000 to listen at all interfaces
 2. **Permission issues:** Make sure your user is in the docker group
 3. **Session issues:** Clear all cookies for localhost if you're being logged off continuously [GitHub - moodlehq/moodle-docker: A docker environment for moodle developers](https://github.com/moodlehq/moodle-docker)
 
