@@ -4,7 +4,7 @@
 
 This is an n8n community node. It lets you use Moodle functions in your n8n workflows.
 
-Moodle is a widely used open-source learning management system (LMS) designed to help educators create and manage online courses. It provides tools for delivering content, facilitating communication, tracking progress, and assessing learners in both academic and corporate environments.
+[Moodle](https://moodle.org/) is a widely used open-source learning management system (LMS) designed to help educators create and manage online courses. It provides tools for delivering content, facilitating communication, tracking progress, and assessing learners in both academic and corporate environments.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
