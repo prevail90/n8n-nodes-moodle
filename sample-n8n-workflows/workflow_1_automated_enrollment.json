@@ -27,7 +27,7 @@
       },
       "id": "a1b2c3d4-e5f6-7g8h-9i0j-k1l2m3n4o5p6",
       "name": "Create User in Moodle",
-      "type": "n8n-nodes-moodle.moodle",
+      "type": "CUSTOM.moodle",
       "typeVersion": 1,
       "position": [460, 300],
       "credentials": {
@@ -44,7 +44,7 @@
       },
       "id": "f1e2d3c4-b5a6-9h8g-7f6e-5d4c3b2a1f0e",
       "name": "Get Available Courses",
-      "type": "n8n-nodes-moodle.moodle",
+      "type": "CUSTOM.moodle",
       "typeVersion": 1,
       "position": [680, 300],
       "credentials": {
@@ -74,7 +74,7 @@
       },
       "id": "h3g4f5e6-d7c8-b9a0-1h2i-3j4k5l6m7n8o",
       "name": "Enroll in Default Courses",
-      "type": "n8n-nodes-moodle.moodle",
+      "type": "CUSTOM.moodle",
       "typeVersion": 1,
       "position": [1120, 300],
       "credentials": {
@@ -93,7 +93,7 @@
       },
       "id": "i4h5g6f7-e8d9-c0b1-a2h3-4i5j6k7l8m9n",
       "name": "Send Welcome Message",
-      "type": "n8n-nodes-moodle.moodle",
+      "type": "CUSTOM.moodle",
       "typeVersion": 1,
       "position": [1340, 300],
       "credentials": {
