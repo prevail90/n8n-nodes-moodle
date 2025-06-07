@@ -7,6 +7,7 @@ import {
     ILoadOptionsFunctions,
     INodePropertyOptions,
     NodeConnectionType,
+    NodeOperationError,
 } from 'n8n-workflow';
 
 import {
@@ -37,7 +38,7 @@ export class Moodle implements INodeType {
         group: ['transform'],
         version: 1,
         subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-        description: `Interact with Moodle LMS - Complete Integration (v${VERSION_INFO.version})`,
+        description: `Interact with Moodle LMS - Complete Integration (v${VERSION_INFO?.version || '0.1.0'})`,
         defaults: {
             name: 'Moodle',
         },
@@ -75,6 +76,10 @@ export class Moodle implements INodeType {
                     {
                         name: 'Message',
                         value: 'message',
+                    },
+                    {
+                        name: 'System',
+                        value: 'system',
                     },
                 ],
                 default: 'user',
@@ -221,22 +226,17 @@ export class Moodle implements INodeType {
                 },
                 options: [
                     {
-                        name: 'Get User Grades',
-                        value: 'getUserGrades',
-                        description: 'Get grades for a user',
+                        name: 'Get User Course Grades',
+                        value: 'getUserCourseGrades',
+                        description: 'Get all course grades overview for a specific user',
                     },
                     {
-                        name: 'Get Course Grades',
-                        value: 'getCourseGrades',
-                        description: 'Get all grades for a course',
-                    },
-                    {
-                        name: 'Get Grade Items',
-                        value: 'getGradeItems',
-                        description: 'Get gradebook structure',
+                        name: 'View Grade Report',
+                        value: 'viewGradeReport',
+                        description: 'Mark that a user viewed their grade report (logging only)',
                     },
                 ],
-                default: 'getUserGrades',
+                default: 'getUserCourseGrades',
                 description: 'The operation to perform on grades',
             },
 
@@ -259,11 +259,42 @@ export class Moodle implements INodeType {
                     {
                         name: 'Get Messages',
                         value: 'getMessages',
-                        description: 'Get user messages',
+                        description: 'Get user messages (legacy - use Get Conversations for modern Moodle)',
+                    },
+                    {
+                        name: 'Get Conversations',
+                        value: 'getConversations',
+                        description: 'Get user conversations (recommended)',
+                    },
+                    {
+                        name: 'Get Conversation Messages',
+                        value: 'getConversationMessages',
+                        description: 'Get messages from a specific conversation',
                     },
                 ],
                 default: 'send',
                 description: 'The operation to perform on messages',
+            },
+
+            // SYSTEM OPERATIONS
+            {
+                displayName: 'Operation',
+                name: 'operation',
+                type: 'options',
+                displayOptions: {
+                    show: {
+                        resource: ['system'],
+                    },
+                },
+                options: [
+                    {
+                        name: 'Get Site Info',
+                        value: 'getSiteInfo',
+                        description: 'Get Moodle site information',
+                    },
+                ],
+                default: 'getSiteInfo',
+                description: 'The operation to perform on system',
             },
 
             // USER FIELDS
@@ -353,6 +384,105 @@ export class Moodle implements INodeType {
                 default: '',
                 required: true,
                 description: 'Email address of the user',
+            },
+
+            // USER GET ALL FIELDS
+            {
+                displayName: 'Return All',
+                name: 'returnAll',
+                type: 'boolean',
+                displayOptions: {
+                    show: {
+                        resource: ['user'],
+                        operation: ['getAll'],
+                    },
+                },
+                default: false,
+                description: 'Whether to return all results or only up to a given limit',
+            },
+            {
+                displayName: 'Limit',
+                name: 'limit',
+                type: 'number',
+                displayOptions: {
+                    show: {
+                        resource: ['user'],
+                        operation: ['getAll'],
+                        returnAll: [false],
+                    },
+                },
+                typeOptions: {
+                    minValue: 1,
+                    maxValue: 1000,
+                },
+                default: 50,
+                description: 'Max number of results to return',
+            },
+            {
+                displayName: 'Search Options',
+                name: 'searchOptions',
+                type: 'collection',
+                placeholder: 'Add Search Option',
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: ['user'],
+                        operation: ['getAll'],
+                    },
+                },
+                options: [
+                    {
+                        displayName: 'Search By',
+                        name: 'searchBy',
+                        type: 'options',
+                        options: [
+                            {
+                                name: 'All Users',
+                                value: 'all',
+                                description: 'Get all users without filtering',
+                            },
+                            {
+                                name: 'Email',
+                                value: 'email',
+                                description: 'Search by email address',
+                            },
+                            {
+                                name: 'First Name',
+                                value: 'firstname',
+                                description: 'Search by first name',
+                            },
+                            {
+                                name: 'Last Name',
+                                value: 'lastname', 
+                                description: 'Search by last name',
+                            },
+                            {
+                                name: 'Username',
+                                value: 'username',
+                                description: 'Search by username',
+                            },
+                            {
+                                name: 'ID Number',
+                                value: 'idnumber',
+                                description: 'Search by ID number',
+                            },
+                        ],
+                        default: 'all',
+                        description: 'Field to search by',
+                    },
+                    {
+                        displayName: 'Search Value',
+                        name: 'searchValue',
+                        type: 'string',
+                        default: '',
+                        displayOptions: {
+                            hide: {
+                                searchBy: ['all'],
+                            },
+                        },
+                        description: 'Value to search for (use % as wildcard)',
+                    },
+                ],
             },
 
             // COURSE FIELDS
@@ -481,26 +611,12 @@ export class Moodle implements INodeType {
                 displayOptions: {
                     show: {
                         resource: ['grade'],
-                        operation: ['getUserGrades'],
+                        operation: ['getUserCourseGrades', 'viewGradeReport'],
                     },
                 },
                 default: '',
                 required: true,
                 description: 'User ID to get grades for',
-            },
-            {
-                displayName: 'Course ID',
-                name: 'gradeCourseId',
-                type: 'number',
-                displayOptions: {
-                    show: {
-                        resource: ['grade'],
-                        operation: ['getCourseGrades', 'getGradeItems'],
-                    },
-                },
-                default: '',
-                required: true,
-                description: 'Course ID to get grades for',
             },
 
             // MESSAGE FIELDS
@@ -548,6 +664,125 @@ export class Moodle implements INodeType {
                 default: '',
                 required: true,
                 description: 'User ID to get messages for',
+            },
+            {
+                displayName: 'Message Filters',
+                name: 'messageFilters',
+                type: 'collection',
+                placeholder: 'Add Filter',
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: ['message'],
+                        operation: ['getMessages'],
+                    },
+                },
+                options: [
+                    {
+                        displayName: 'Message Type',
+                        name: 'type',
+                        type: 'options',
+                        options: [
+                            {
+                                name: 'Both (Sent and Received)',
+                                value: 'both',
+                                description: 'Get both sent and received messages',
+                            },
+                            {
+                                name: 'Received',
+                                value: 'to',
+                                description: 'Messages received by this user',
+                            },
+                            {
+                                name: 'Sent',
+                                value: 'from',
+                                description: 'Messages sent by this user',
+                            },
+                        ],
+                        default: 'both',
+                        description: 'Type of messages to retrieve',
+                    },
+                    {
+                        displayName: 'Read Status',
+                        name: 'read',
+                        type: 'options',
+                        options: [
+                            {
+                                name: 'All',
+                                value: 'all',
+                                description: 'Both read and unread messages',
+                            },
+                            {
+                                name: 'Read Only',
+                                value: 1,
+                                description: 'Only read messages',
+                            },
+                            {
+                                name: 'Unread Only',
+                                value: 0,
+                                description: 'Only unread messages',
+                            },
+                        ],
+                        default: 'all',
+                        description: 'Filter by read status',
+                    },
+                    {
+                        displayName: 'Limit',
+                        name: 'limitnum',
+                        type: 'number',
+                        default: 20,
+                        description: 'Maximum number of messages to retrieve',
+                    },
+                    {
+                        displayName: 'Offset',
+                        name: 'limitfrom',
+                        type: 'number',
+                        default: 0,
+                        description: 'Number of messages to skip',
+                    },
+                ],
+            },
+            {
+                displayName: 'User ID',
+                name: 'conversationUserId',
+                type: 'number',
+                displayOptions: {
+                    show: {
+                        resource: ['message'],
+                        operation: ['getConversations'],
+                    },
+                },
+                default: '',
+                required: true,
+                description: 'User ID to get conversations for',
+            },
+            {
+                displayName: 'Conversation ID',
+                name: 'conversationId',
+                type: 'number',
+                displayOptions: {
+                    show: {
+                        resource: ['message'],
+                        operation: ['getConversationMessages'],
+                    },
+                },
+                default: '',
+                required: true,
+                description: 'ID of the conversation to get messages from',
+            },
+            {
+                displayName: 'Current User ID',
+                name: 'currentUserId',
+                type: 'number',
+                displayOptions: {
+                    show: {
+                        resource: ['message'],
+                        operation: ['getConversationMessages'],
+                    },
+                },
+                default: '',
+                required: true,
+                description: 'ID of the current user (required for conversation messages)',
             },
 
             // ADDITIONAL FIELDS - ENHANCED FOR USERS
@@ -726,6 +961,13 @@ export class Moodle implements INodeType {
                         default: true,
                         description: 'Whether the course is visible to students',
                     },
+                    {
+                        displayName: 'Make Shortname Unique',
+                        name: 'makeUnique',
+                        type: 'boolean',
+                        default: false,
+                        description: 'Automatically append timestamp to shortname to ensure uniqueness',
+                    },
                 ],
             },
         ],
@@ -763,15 +1005,22 @@ export class Moodle implements INodeType {
     };
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-        console.log(`🚀 MOODLE NODE EXECUTING - Version ${VERSION_INFO.version} - Built on ${VERSION_INFO.buildDate}`);
+        const versionString = VERSION_INFO?.version || '0.1.0';
+        const buildDate = VERSION_INFO?.buildDate || 'unknown';
+        console.log(`🚀 MOODLE NODE EXECUTING - Version ${versionString} - Built on ${buildDate}`);
         
         const items = this.getInputData();
+        console.log(`Processing ${items.length} items`);
+        
         const returnData: INodeExecutionData[] = [];
         
         const resource = this.getNodeParameter('resource', 0) as string;
         const operation = this.getNodeParameter('operation', 0) as string;
         
+        console.log(`Resource: ${resource}, Operation: ${operation}`);
+        
         for (let i = 0; i < items.length; i++) {
+            console.log(`\n--- Processing item ${i + 1} of ${items.length} ---`);
             try {
                 let responseData;
                 
@@ -800,6 +1049,17 @@ export class Moodle implements INodeType {
                         }
 
                         responseData = await moodleApiRequest.call(this, 'POST', '', {}, userParams);
+                        
+                        // Handle the response - Moodle returns an array of created users
+                        if (Array.isArray(responseData) && responseData.length > 0) {
+                            // Extract the first user and mark it as a single item
+                            responseData = {
+                                ...responseData[0],
+                                _created: true,
+                                _username: username
+                            };
+                            console.log('Extracted single user from array:', responseData);
+                        }
                     }
                     
                     if (operation === 'get') {
@@ -821,21 +1081,80 @@ export class Moodle implements INodeType {
                     }
                     
                     if (operation === 'getAll') {
-                        responseData = await moodleApiRequest.call(
-                            this,
-                            'POST',
-                            '',
-                            {},
-                            {
-                                wsfunction: 'core_user_get_users_by_field',
-                                field: 'id',
-                                'values[0]': '1',
-                                'values[1]': '2',
-                                'values[2]': '3',
-                                'values[3]': '4',
-                                'values[4]': '5',
+                        const returnAll = this.getNodeParameter('returnAll', i) as boolean;
+                        const limit = this.getNodeParameter('limit', i, 50) as number;
+                        const searchOptions = this.getNodeParameter('searchOptions', i) as IDataObject;
+                        
+                        let params: IDataObject = {
+                            wsfunction: 'core_user_get_users',
+                        };
+                        
+                        // Build search criteria based on options
+                        const searchBy = searchOptions.searchBy || 'all';
+                        const searchValue = searchOptions.searchValue as string || '';
+                        
+                        if (searchBy === 'all') {
+                            // Get all users by using email with wildcard
+                            params['criteria[0][key]'] = 'email';
+                            params['criteria[0][value]'] = '%';
+                        } else {
+                            // Search by specific field
+                            params['criteria[0][key]'] = searchBy;
+                            params['criteria[0][value]'] = searchValue || '%';
+                        }
+                        
+                        console.log(`Searching users by ${searchBy} with value: ${params['criteria[0][value]']}`);
+                        
+                        try {
+                            responseData = await moodleApiRequest.call(this, 'POST', '', {}, params);
+                        } catch (error) {
+                            // If search by email fails, try alternative method
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            if (searchBy === 'all' && errorMessage.includes('invalidparameter')) {
+                                console.log('Email wildcard search failed, trying alternative method...');
+                                
+                                // Alternative: Get users by searching for common domain
+                                params['criteria[0][key]'] = 'email';
+                                params['criteria[0][value]'] = '@';
+                                
+                                try {
+                                    responseData = await moodleApiRequest.call(this, 'POST', '', {}, params);
+                                } catch (secondError) {
+                                    // If that also fails, try getting specific user IDs
+                                    console.log('Alternative search failed, falling back to empty criteria');
+                                    delete params['criteria[0][key]'];
+                                    delete params['criteria[0][value]'];
+                                    params['criteria'] = [];
+                                    
+                                    responseData = await moodleApiRequest.call(this, 'POST', '', {}, params);
+                                }
+                            } else {
+                                throw error;
                             }
-                        );
+                        }
+                        
+                        // Extract users array from response
+                        if (responseData && responseData.users) {
+                            responseData = responseData.users;
+                            console.log(`Found ${responseData.length} users`);
+                            
+                            // Apply limit if not returning all
+                            if (!returnAll && responseData.length > limit) {
+                                responseData = responseData.slice(0, limit);
+                                console.log(`Limited to ${limit} users`);
+                            }
+                        } else if (responseData && !responseData.warnings) {
+                            // If no users array but also no warnings, might be a different response format
+                            console.log('Unexpected response format:', responseData);
+                            responseData = [];
+                        } else {
+                            responseData = [];
+                        }
+                        
+                        // Add warning if no users found
+                        if (responseData.length === 0) {
+                            console.warn('No users found. This might be due to permissions or search criteria.');
+                        }
                     }
                     
                     if (operation === 'update') {
@@ -880,9 +1199,18 @@ export class Moodle implements INodeType {
                 if (resource === 'course') {
                     if (operation === 'create') {
                         const fullname = this.getNodeParameter('fullname', i) as string;
-                        const shortname = this.getNodeParameter('shortname', i) as string;
+                        let shortname = this.getNodeParameter('shortname', i) as string;
                         const categoryid = this.getNodeParameter('categoryid', i) as number;
                         const additionalFields = this.getNodeParameter('additionalFields', i) as IDataObject;
+                        
+                        // Check if we should make shortname unique
+                        if (additionalFields.makeUnique) {
+                            const timestamp = Date.now();
+                            shortname = `${shortname}_${timestamp}`;
+                            console.log(`Making shortname unique: ${shortname}`);
+                            // Remove makeUnique from additionalFields so it's not sent to Moodle
+                            delete additionalFields.makeUnique;
+                        }
                         
                         const courseParams = {
                             wsfunction: 'core_course_create_courses',
@@ -892,11 +1220,38 @@ export class Moodle implements INodeType {
                         };
 
                         if (Object.keys(additionalFields).length > 0) {
+                            // Convert dates to Unix timestamps if present
+                            if (additionalFields.startdate) {
+                                additionalFields.startdate = Math.floor(new Date(additionalFields.startdate as string).getTime() / 1000);
+                            }
+                            if (additionalFields.enddate) {
+                                additionalFields.enddate = Math.floor(new Date(additionalFields.enddate as string).getTime() / 1000);
+                            }
+                            // Convert boolean to 1/0 for Moodle
+                            if (additionalFields.visible !== undefined) {
+                                additionalFields.visible = additionalFields.visible ? 1 : 0;
+                            }
+                            
                             const flattenedFields = flattenObject(additionalFields, 'courses[0]');
                             Object.assign(courseParams, flattenedFields);
                         }
 
+                        console.log(`Creating course with shortname: ${shortname}`);
                         responseData = await moodleApiRequest.call(this, 'POST', '', {}, courseParams);
+                        
+                        // Log the raw response for debugging
+                        console.log('Course creation response:', JSON.stringify(responseData, null, 2));
+                        
+                        // Handle the response - Moodle returns an array of created courses
+                        if (Array.isArray(responseData) && responseData.length > 0) {
+                            // Extract the first course and mark it as a single item
+                            responseData = {
+                                ...responseData[0],
+                                _created: true,
+                                _shortname: shortname
+                            };
+                            console.log('Extracted single course from array:', responseData);
+                        }
                     }
                     
                     if (operation === 'get') {
@@ -1065,23 +1420,10 @@ export class Moodle implements INodeType {
 
                 // GRADE OPERATIONS
                 if (resource === 'grade') {
-                    if (operation === 'getUserGrades') {
+                    if (operation === 'getUserCourseGrades') {
                         const userId = this.getNodeParameter('gradeUserId', i) as string;
                         
-                        responseData = await moodleApiRequest.call(
-                            this,
-                            'POST',
-                            '',
-                            {},
-                            {
-                                wsfunction: 'core_grades_get_grades',
-                                userid: userId,
-                            }
-                        );
-                    }
-                    
-                    if (operation === 'getCourseGrades') {
-                        const courseId = this.getNodeParameter('gradeCourseId', i) as string;
+                        console.log(`Getting all course grades for user ${userId}...`);
                         
                         responseData = await moodleApiRequest.call(
                             this,
@@ -1090,24 +1432,66 @@ export class Moodle implements INodeType {
                             {},
                             {
                                 wsfunction: 'gradereport_overview_get_course_grades',
-                                courseid: courseId,
+                                userid: userId,
                             }
                         );
+                        
+                        // Extract grades array if present
+                        if (responseData && responseData.grades) {
+                            console.log(`Found grades for ${responseData.grades.length} courses`);
+                            
+                            // Add helpful information if no grades found
+                            if (responseData.grades.length === 0) {
+                                responseData = {
+                                    userid: userId,
+                                    grades: [],
+                                    message: 'No course grades found. Make sure: 1) User is enrolled in courses, 2) Grades have been entered, 3) Grades are visible to students',
+                                };
+                            } else {
+                                responseData = responseData.grades;
+                            }
+                        } else {
+                            console.log('No course grades found for this user');
+                            responseData = {
+                                userid: userId,
+                                grades: [],
+                                message: 'No course grades found. This could mean: 1) User has no grades yet, 2) Grades are hidden, or 3) Permission issues',
+                            };
+                        }
                     }
                     
-                    if (operation === 'getGradeItems') {
-                        const courseId = this.getNodeParameter('gradeCourseId', i) as string;
+                    if (operation === 'viewGradeReport') {
+                        const userId = this.getNodeParameter('gradeUserId', i) as string;
                         
-                        responseData = await moodleApiRequest.call(
-                            this,
-                            'POST',
-                            '',
-                            {},
-                            {
-                                wsfunction: 'core_grade_get_grade_items',
-                                courseid: courseId,
+                        console.log(`Viewing grade report for user ${userId}...`);
+                        
+                        try {
+                            responseData = await moodleApiRequest.call(
+                                this,
+                                'POST',
+                                '',
+                                {},
+                                {
+                                    wsfunction: 'gradereport_overview_view_grade_report',
+                                    userid: userId,
+                                }
+                            );
+                            
+                            // This function typically returns a status rather than actual grades
+                            console.log('Grade report view response:', JSON.stringify(responseData, null, 2));
+                            
+                            if (responseData && responseData.status !== false) {
+                                responseData = {
+                                    success: true,
+                                    userid: userId,
+                                    message: 'Grade report viewed successfully. Note: This function logs the view but does not return actual grades.',
+                                    warnings: responseData.warnings || [],
+                                };
                             }
-                        );
+                        } catch (error) {
+                            console.error('Error viewing grade report:', error);
+                            throw error;
+                        }
                     }
                 }
 
@@ -1128,10 +1512,213 @@ export class Moodle implements INodeType {
                                 'messages[0][text]': messageText,
                             }
                         );
+                        
+                        // Extract the first message and add helpful info
+                        if (Array.isArray(responseData) && responseData.length > 0) {
+                            const sentMessage = responseData[0];
+                            responseData = {
+                                ...sentMessage,
+                                _sent: true,
+                                _toUserId: toUserId,
+                                _note: `Message sent successfully. To retrieve this message:
+1. Use "Get Conversations" with User ID ${sentMessage.useridfrom} to find conversation ID ${sentMessage.conversationid}
+2. Use "Get Conversation Messages" with Conversation ID ${sentMessage.conversationid}
+3. Or try "Get Messages" with User ID ${sentMessage.useridfrom} and Message Type "Sent"`
+                            };
+                        }
                     }
                     
                     if (operation === 'getMessages') {
                         const userId = this.getNodeParameter('messageUserId', i) as string;
+                        const messageFilters = this.getNodeParameter('messageFilters', i) as IDataObject;
+                        
+                        const type = messageFilters.type || 'both';
+                        const read = messageFilters.read;
+                        const limitnum = (messageFilters.limitnum as number) || 20;
+                        const limitfrom = (messageFilters.limitfrom as number) || 0;
+                        
+                        let allMessages: any[] = [];
+                        
+                        // Get received messages if type is 'to' or 'both'
+                        if (type === 'to' || type === 'both') {
+                            const receivedParams: IDataObject = {
+                                wsfunction: 'core_message_get_messages',
+                                useridto: userId,
+                                useridfrom: 0, // 0 means any user
+                                limitfrom: limitfrom,
+                                limitnum: limitnum,
+                            };
+                            
+                            if (read !== 'all' && read !== undefined) {
+                                receivedParams.read = read;
+                            }
+                            
+                            console.log('Getting received messages...');
+                            const receivedResponse = await moodleApiRequest.call(this, 'POST', '', {}, receivedParams);
+                            
+                            if (receivedResponse && receivedResponse.messages && Array.isArray(receivedResponse.messages)) {
+                                console.log(`Found ${receivedResponse.messages.length} received messages`);
+                                allMessages.push(...receivedResponse.messages.map((msg: any) => ({
+                                    ...msg,
+                                    _messageDirection: 'received'
+                                })));
+                            } else if (receivedResponse && !receivedResponse.messages) {
+                                console.log('Received messages response format:', JSON.stringify(receivedResponse, null, 2));
+                            }
+                        }
+                        
+                        // Get sent messages if type is 'from' or 'both'
+                        if (type === 'from' || type === 'both') {
+                            const sentParams: IDataObject = {
+                                wsfunction: 'core_message_get_messages',
+                                useridfrom: userId,
+                                useridto: 0, // Required parameter - 0 means any user
+                                limitfrom: limitfrom,
+                                limitnum: limitnum,
+                            };
+                            
+                            if (read !== 'all' && read !== undefined) {
+                                sentParams.read = read;
+                            }
+                            
+                            console.log('Getting sent messages...');
+                            const sentResponse = await moodleApiRequest.call(this, 'POST', '', {}, sentParams);
+                            
+                            if (sentResponse && sentResponse.messages && Array.isArray(sentResponse.messages)) {
+                                console.log(`Found ${sentResponse.messages.length} sent messages`);
+                                allMessages.push(...sentResponse.messages.map((msg: any) => ({
+                                    ...msg,
+                                    _messageDirection: 'sent'
+                                })));
+                            } else if (sentResponse && !sentResponse.messages) {
+                                console.log('Sent messages response format:', JSON.stringify(sentResponse, null, 2));
+                            }
+                        }
+                        
+                        // Sort messages by time (newest first)
+                        allMessages.sort((a, b) => b.timecreated - a.timecreated);
+                        
+                        // Limit to requested number if getting both types
+                        if (type === 'both' && allMessages.length > limitnum) {
+                            allMessages = allMessages.slice(0, limitnum);
+                        }
+                        
+                        console.log(`Total messages found: ${allMessages.length}`);
+                        
+                        if (allMessages.length === 0) {
+                            console.log('\n⚠️  No messages found. Common reasons:');
+                            console.log('1. Messages might be in conversations - try "Get Conversations" instead');
+                            console.log('2. The user might not have any messages in the selected direction');
+                            console.log('3. Messages might be marked as read/unread differently than expected');
+                            console.log('4. For messages you just sent, try searching with type "Sent" and the sender\'s user ID');
+                            console.log('5. Modern Moodle uses conversations - legacy message API might not show recent messages');
+                            console.log('\n💡 TIP: Use "Get Conversations" followed by "Get Conversation Messages" for best results');
+                        }
+                        
+                        responseData = allMessages;
+                    }
+                    
+                    if (operation === 'getConversations') {
+                        const userId = this.getNodeParameter('conversationUserId', i) as string;
+                        
+                        console.log(`Getting conversations for user ${userId}...`);
+                        
+                        try {
+                            responseData = await moodleApiRequest.call(
+                                this,
+                                'POST',
+                                '',
+                                {},
+                                {
+                                    wsfunction: 'core_message_get_conversations',
+                                    userid: userId,
+                                    limitfrom: 0,
+                                    limitnum: 50,
+                                    // Removed includecontactrequests and includeprivacyinfo as they're not supported
+                                }
+                            );
+                            
+                            // Handle the response - extract conversations array if present
+                            if (responseData && responseData.conversations) {
+                                console.log(`Found ${responseData.conversations.length} conversations`);
+                                responseData = responseData.conversations;
+                            } else if (Array.isArray(responseData)) {
+                                console.log(`Found ${responseData.length} conversations (direct array format)`);
+                            } else {
+                                console.log('Unexpected conversations format:', JSON.stringify(responseData, null, 2));
+                                // If empty response, return empty array
+                                if (!responseData) {
+                                    responseData = [];
+                                }
+                            }
+                        } catch (error) {
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            if (errorMessage.includes('Invalid web service function')) {
+                                console.error('Conversations API not available - this Moodle version might not support it');
+                                throw new NodeOperationError(
+                                    this.getNode(),
+                                    'Conversations API not available. This feature requires Moodle 3.6 or higher. Try using "Get Messages" instead.',
+                                    { itemIndex: i }
+                                );
+                            }
+                            throw error;
+                        }
+                    }
+                    
+                    if (operation === 'getConversationMessages') {
+                        const conversationId = this.getNodeParameter('conversationId', i) as string;
+                        const currentUserId = this.getNodeParameter('currentUserId', i) as string;
+                        
+                        console.log(`Getting messages for conversation ${conversationId}...`);
+                        
+                        try {
+                            responseData = await moodleApiRequest.call(
+                                this,
+                                'POST',
+                                '',
+                                {},
+                                {
+                                    wsfunction: 'core_message_get_conversation_messages',
+                                    currentuserid: currentUserId,
+                                    convid: conversationId,
+                                    limitfrom: 0,
+                                    limitnum: 100,
+                                    // Removed 'newest' parameter - it might not be supported in all versions
+                                }
+                            );
+                            
+                            // Handle the response - extract messages array if present
+                            if (responseData && responseData.messages) {
+                                console.log(`Found ${responseData.messages.length} messages in conversation`);
+                                responseData = responseData.messages;
+                            } else if (Array.isArray(responseData)) {
+                                console.log(`Found ${responseData.length} messages (direct array format)`);
+                            } else {
+                                console.log('Unexpected conversation messages format:', JSON.stringify(responseData, null, 2));
+                                // If empty response, return empty array
+                                if (!responseData) {
+                                    responseData = [];
+                                }
+                            }
+                        } catch (error) {
+                            const errorMessage = error instanceof Error ? error.message : String(error);
+                            if (errorMessage.includes('Invalid web service function')) {
+                                console.error('Conversation messages API not available - this Moodle version might not support it');
+                                throw new NodeOperationError(
+                                    this.getNode(),
+                                    'Conversation messages API not available. This feature requires Moodle 3.6 or higher.',
+                                    { itemIndex: i }
+                                );
+                            }
+                            throw error;
+                        }
+                    }
+                }
+                
+                // SYSTEM OPERATIONS
+                if (resource === 'system') {
+                    if (operation === 'getSiteInfo') {
+                        console.log('Getting Moodle site information...');
                         
                         responseData = await moodleApiRequest.call(
                             this,
@@ -1139,22 +1726,34 @@ export class Moodle implements INodeType {
                             '',
                             {},
                             {
-                                wsfunction: 'core_message_get_messages',
-                                useridto: userId,
-                                limitfrom: 0,
-                                limitnum: 20,
+                                wsfunction: 'core_webservice_get_site_info',
                             }
                         );
+                        
+                        // Add helpful information about available functions
+                        if (responseData) {
+                            console.log('Site info retrieved successfully');
+                            responseData = {
+                                ...responseData,
+                                _note: 'To see available functions, check your Moodle web service configuration',
+                                _tip: 'Site administration → Server → Web services → External services',
+                            };
+                        }
                     }
                 }
                 
+                // Handle response data
                 if (Array.isArray(responseData)) {
                     returnData.push(...responseData.map(item => ({ json: item })));
-                } else {
+                } else if (responseData) {
                     returnData.push({ json: responseData });
+                } else {
+                    // Handle null/undefined responses
+                    returnData.push({ json: { success: true } });
                 }
                 
             } catch (error) {
+                console.error(`Error processing item ${i + 1}:`, error);
                 if (this.continueOnFail()) {
                     returnData.push({ json: { error: (error as Error).message } });
                     continue;
@@ -1162,6 +1761,9 @@ export class Moodle implements INodeType {
                 throw error;
             }
         }
+        
+        console.log(`\nTotal items processed: ${items.length}`);
+        console.log(`Total items returned: ${returnData.length}`);
         
         return [returnData];
     }

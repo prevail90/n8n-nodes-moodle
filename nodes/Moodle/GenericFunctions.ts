@@ -28,15 +28,25 @@ export async function moodleApiRequest(
     const fullUrl = `${cleanUrl}/webservice/rest/server.php`;
 
     // Combine all parameters
-    const allParams = {
+    const allParams: IDataObject = {
         wstoken: token,
         moodlewsrestformat: 'json',
         ...qs,
         ...body,
     };
 
+    // Generate request ID for tracking
+    const requestId = Math.random().toString(36).substring(7);
+    const timestamp = new Date().toISOString();
+
     // Debug: log what we're sending
-    console.log('Moodle API Request Parameters:', JSON.stringify(allParams, null, 2));
+    console.log(`[${requestId}] ${timestamp} - Moodle API Request:`, JSON.stringify({
+        function: allParams.wsfunction,
+        params: Object.keys(allParams).filter(k => k !== 'wstoken').reduce((obj: IDataObject, key) => {
+            obj[key] = allParams[key];
+            return obj;
+        }, {} as IDataObject)
+    }, null, 2));
 
     // Build form data exactly like curl does
     const formData = new URLSearchParams();
@@ -45,8 +55,6 @@ export async function moodleApiRequest(
     }
     
     const bodyString = formData.toString();
-    console.log('Form data string:', bodyString);
-    console.log('Content-Length:', bodyString.length);
     
     const options: IHttpRequestOptions = {
         method,
@@ -62,28 +70,43 @@ export async function moodleApiRequest(
     };
 
     try {
+        console.log(`[${requestId}] Sending request...`);
         const response = await this.helpers.httpRequest(options);
+        console.log(`[${requestId}] Received response`);
         
         // Parse JSON response manually
         let parsedResponse;
         try {
             parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
         } catch (parseError) {
-            console.log('Failed to parse response:', response);
+            console.log(`[${requestId}] Failed to parse response as JSON:`, response);
+            
+            // Check if the response is an error message string
+            if (typeof response === 'string' && response.includes('is already used for another')) {
+                throw new NodeApiError(this.getNode(), {
+                    message: 'Moodle API Error',
+                    description: response,
+                });
+            }
+            
             throw new NodeApiError(this.getNode(), {
                 message: 'Failed to parse Moodle API response',
                 description: `Response was not valid JSON: ${response}`,
             });
         }
         
+        // Log the full response for debugging
+        console.log(`[${requestId}] Moodle API Response:`, JSON.stringify(parsedResponse, null, 2));
+        
         // Check for null response (common for successful delete operations)
         if (parsedResponse === null || parsedResponse === undefined) {
-            console.log('Received null/undefined response - treating as success');
+            console.log(`[${requestId}] Received null/undefined response - treating as success`);
             return parsedResponse;
         }
         
         // Check for Moodle API errors only if response is not null
         if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.exception) {
+            console.log(`[${requestId}] Moodle API Error detected`);
             throw new NodeApiError(this.getNode(), {
                 message: parsedResponse.message || 'Moodle API Error',
                 description: `${parsedResponse.debuginfo || ''}\nErrorcode: ${parsedResponse.errorcode || 'Unknown'}`,
@@ -91,6 +114,13 @@ export async function moodleApiRequest(
             });
         }
         
+        // Check for warnings in successful responses
+        if (parsedResponse && parsedResponse.warnings && Array.isArray(parsedResponse.warnings)) {
+            console.log(`[${requestId}] Moodle API Warnings:`, parsedResponse.warnings);
+            // Don't throw error for warnings, just log them
+        }
+        
+        console.log(`[${requestId}] Request completed successfully`);
         return parsedResponse;
     } catch (error: any) {
         // If it's already a NodeApiError, just re-throw it
