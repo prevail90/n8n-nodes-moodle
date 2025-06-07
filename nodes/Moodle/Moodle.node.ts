@@ -982,7 +982,6 @@ export class Moodle implements INodeType {
                     const courses = await moodleApiRequest.call(
                         this,
                         'POST',
-                        '',
                         {},
                         {
                             wsfunction: 'core_course_get_courses',
@@ -1048,7 +1047,7 @@ export class Moodle implements INodeType {
                             Object.assign(userParams, flattenedFields);
                         }
 
-                        responseData = await moodleApiRequest.call(this, 'POST', '', {}, userParams);
+                        responseData = await moodleApiRequest.call(this, 'POST', {}, userParams);
                         
                         // Handle the response - Moodle returns an array of created users
                         if (Array.isArray(responseData) && responseData.length > 0) {
@@ -1068,7 +1067,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_user_get_users_by_field',
@@ -1085,7 +1083,7 @@ export class Moodle implements INodeType {
                         const limit = this.getNodeParameter('limit', i, 50) as number;
                         const searchOptions = this.getNodeParameter('searchOptions', i) as IDataObject;
                         
-                        let params: IDataObject = {
+                        const params: IDataObject = {
                             wsfunction: 'core_user_get_users',
                         };
                         
@@ -1106,7 +1104,7 @@ export class Moodle implements INodeType {
                         console.log(`Searching users by ${searchBy} with value: ${params['criteria[0][value]']}`);
                         
                         try {
-                            responseData = await moodleApiRequest.call(this, 'POST', '', {}, params);
+                            responseData = await moodleApiRequest.call(this, 'POST', {}, params);
                         } catch (error) {
                             // If search by email fails, try alternative method
                             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1118,7 +1116,7 @@ export class Moodle implements INodeType {
                                 params['criteria[0][value]'] = '@';
                                 
                                 try {
-                                    responseData = await moodleApiRequest.call(this, 'POST', '', {}, params);
+                                    responseData = await moodleApiRequest.call(this, 'POST', {}, params);
                                 } catch (secondError) {
                                     // If that also fails, try getting specific user IDs
                                     console.log('Alternative search failed, falling back to empty criteria');
@@ -1126,7 +1124,7 @@ export class Moodle implements INodeType {
                                     delete params['criteria[0][value]'];
                                     params['criteria'] = [];
                                     
-                                    responseData = await moodleApiRequest.call(this, 'POST', '', {}, params);
+                                    responseData = await moodleApiRequest.call(this, 'POST', {}, params);
                                 }
                             } else {
                                 throw error;
@@ -1171,7 +1169,7 @@ export class Moodle implements INodeType {
                             Object.assign(updateParams, flattenedFields);
                         }
 
-                        responseData = await moodleApiRequest.call(this, 'POST', '', {}, updateParams);
+                        responseData = await moodleApiRequest.call(this, 'POST', {}, updateParams);
                     }
                     
                     if (operation === 'delete') {
@@ -1180,7 +1178,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_user_delete_users',
@@ -1237,7 +1234,7 @@ export class Moodle implements INodeType {
                         }
 
                         console.log(`Creating course with shortname: ${shortname}`);
-                        responseData = await moodleApiRequest.call(this, 'POST', '', {}, courseParams);
+                        responseData = await moodleApiRequest.call(this, 'POST', {}, courseParams);
                         
                         // Log the raw response for debugging
                         console.log('Course creation response:', JSON.stringify(responseData, null, 2));
@@ -1260,7 +1257,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_course_get_courses_by_field',
@@ -1276,7 +1272,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_course_get_courses',
@@ -1298,7 +1293,7 @@ export class Moodle implements INodeType {
                             Object.assign(updateParams, flattenedFields);
                         }
 
-                        responseData = await moodleApiRequest.call(this, 'POST', '', {}, updateParams);
+                        responseData = await moodleApiRequest.call(this, 'POST', {}, updateParams);
                     }
                     
                     if (operation === 'delete') {
@@ -1307,7 +1302,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_course_delete_courses',
@@ -1327,7 +1321,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_enrol_get_enrolled_users',
@@ -1340,7 +1333,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_course_get_categories',
@@ -1359,7 +1351,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'enrol_manual_enrol_users',
@@ -1377,7 +1368,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'enrol_manual_unenrol_users',
@@ -1393,7 +1383,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_enrol_get_users_courses',
@@ -1408,7 +1397,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_enrol_get_enrolled_users',
@@ -1428,7 +1416,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'gradereport_overview_get_course_grades',
@@ -1469,7 +1456,6 @@ export class Moodle implements INodeType {
                             responseData = await moodleApiRequest.call(
                                 this,
                                 'POST',
-                                '',
                                 {},
                                 {
                                     wsfunction: 'gradereport_overview_view_grade_report',
@@ -1504,7 +1490,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_message_send_instant_messages',
@@ -1554,7 +1539,7 @@ export class Moodle implements INodeType {
                             }
                             
                             console.log('Getting received messages...');
-                            const receivedResponse = await moodleApiRequest.call(this, 'POST', '', {}, receivedParams);
+                            const receivedResponse = await moodleApiRequest.call(this, 'POST', {}, receivedParams);
                             
                             if (receivedResponse && receivedResponse.messages && Array.isArray(receivedResponse.messages)) {
                                 console.log(`Found ${receivedResponse.messages.length} received messages`);
@@ -1582,7 +1567,7 @@ export class Moodle implements INodeType {
                             }
                             
                             console.log('Getting sent messages...');
-                            const sentResponse = await moodleApiRequest.call(this, 'POST', '', {}, sentParams);
+                            const sentResponse = await moodleApiRequest.call(this, 'POST', {}, sentParams);
                             
                             if (sentResponse && sentResponse.messages && Array.isArray(sentResponse.messages)) {
                                 console.log(`Found ${sentResponse.messages.length} sent messages`);
@@ -1627,7 +1612,6 @@ export class Moodle implements INodeType {
                             responseData = await moodleApiRequest.call(
                                 this,
                                 'POST',
-                                '',
                                 {},
                                 {
                                     wsfunction: 'core_message_get_conversations',
@@ -1675,7 +1659,6 @@ export class Moodle implements INodeType {
                             responseData = await moodleApiRequest.call(
                                 this,
                                 'POST',
-                                '',
                                 {},
                                 {
                                     wsfunction: 'core_message_get_conversation_messages',
@@ -1723,7 +1706,6 @@ export class Moodle implements INodeType {
                         responseData = await moodleApiRequest.call(
                             this,
                             'POST',
-                            '',
                             {},
                             {
                                 wsfunction: 'core_webservice_get_site_info',

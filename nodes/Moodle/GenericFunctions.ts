@@ -15,7 +15,6 @@ import {
 export async function moodleApiRequest(
     this: IExecuteFunctions | ILoadOptionsFunctions | IHookFunctions | IWebhookFunctions,
     method: IHttpRequestMethods,
-    endpoint: string,
     body: IDataObject = {},
     qs: IDataObject = {},
 ): Promise<any> {
@@ -35,20 +34,7 @@ export async function moodleApiRequest(
         ...body,
     };
 
-    // Generate request ID for tracking
-    const requestId = Math.random().toString(36).substring(7);
-    const timestamp = new Date().toISOString();
-
-    // Debug: log what we're sending
-    console.log(`[${requestId}] ${timestamp} - Moodle API Request:`, JSON.stringify({
-        function: allParams.wsfunction,
-        params: Object.keys(allParams).filter(k => k !== 'wstoken').reduce((obj: IDataObject, key) => {
-            obj[key] = allParams[key];
-            return obj;
-        }, {} as IDataObject)
-    }, null, 2));
-
-    // Build form data exactly like curl does
+    // Build form data
     const formData = new URLSearchParams();
     for (const [key, value] of Object.entries(allParams)) {
         formData.append(key, String(value));
@@ -70,17 +56,13 @@ export async function moodleApiRequest(
     };
 
     try {
-        console.log(`[${requestId}] Sending request...`);
         const response = await this.helpers.httpRequest(options);
-        console.log(`[${requestId}] Received response`);
         
         // Parse JSON response manually
         let parsedResponse;
         try {
             parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
         } catch (parseError) {
-            console.log(`[${requestId}] Failed to parse response as JSON:`, response);
-            
             // Check if the response is an error message string
             if (typeof response === 'string' && response.includes('is already used for another')) {
                 throw new NodeApiError(this.getNode(), {
@@ -95,18 +77,13 @@ export async function moodleApiRequest(
             });
         }
         
-        // Log the full response for debugging
-        console.log(`[${requestId}] Moodle API Response:`, JSON.stringify(parsedResponse, null, 2));
-        
         // Check for null response (common for successful delete operations)
         if (parsedResponse === null || parsedResponse === undefined) {
-            console.log(`[${requestId}] Received null/undefined response - treating as success`);
             return parsedResponse;
         }
         
         // Check for Moodle API errors only if response is not null
         if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.exception) {
-            console.log(`[${requestId}] Moodle API Error detected`);
             throw new NodeApiError(this.getNode(), {
                 message: parsedResponse.message || 'Moodle API Error',
                 description: `${parsedResponse.debuginfo || ''}\nErrorcode: ${parsedResponse.errorcode || 'Unknown'}`,
@@ -114,13 +91,6 @@ export async function moodleApiRequest(
             });
         }
         
-        // Check for warnings in successful responses
-        if (parsedResponse && parsedResponse.warnings && Array.isArray(parsedResponse.warnings)) {
-            console.log(`[${requestId}] Moodle API Warnings:`, parsedResponse.warnings);
-            // Don't throw error for warnings, just log them
-        }
-        
-        console.log(`[${requestId}] Request completed successfully`);
         return parsedResponse;
     } catch (error: any) {
         // If it's already a NodeApiError, just re-throw it
@@ -168,9 +138,8 @@ export async function moodleApiRequest(
 export async function moodleApiRequestAllItems(
     this: IExecuteFunctions | ILoadOptionsFunctions,
     method: IHttpRequestMethods,
-    endpoint: string,
     body: IDataObject = {},
     qs: IDataObject = {},
 ): Promise<any> {
-    return moodleApiRequest.call(this, method, endpoint, body, qs);
+    return moodleApiRequest.call(this, method, body, qs);
 }

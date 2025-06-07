@@ -1,4 +1,5 @@
 import {
+    ICredentialTestRequest,
     ICredentialType,
     INodeProperties,
 } from 'n8n-workflow';
@@ -14,8 +15,8 @@ export class MoodleApi implements ICredentialType {
             type: 'string',
             default: '',
             placeholder: 'https://your-moodle-site.com',
-            description: 'The URL of your Moodle instance',
             required: true,
+            description: 'The URL of your Moodle instance',
         },
         {
             displayName: 'Web Service Token',
@@ -25,8 +26,25 @@ export class MoodleApi implements ICredentialType {
                 password: true,
             },
             default: '',
-            description: 'The web service token for authentication',
             required: true,
+            description: 'Your Moodle Web Service token. You can create one in Site administration → Server → Web services → Manage tokens',
         },
     ];
+
+    // This allows n8n to verify the credentials are valid
+    test: ICredentialTestRequest = {
+        request: {
+            baseURL: '={{$credentials.url}}',
+            url: '/webservice/rest/server.php',
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: {
+                wstoken: '={{$credentials.token}}',
+                wsfunction: 'core_webservice_get_site_info',
+                moodlewsrestformat: 'json',
+            },
+        },
+    };
 }
