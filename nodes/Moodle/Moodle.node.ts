@@ -13,6 +13,9 @@ import {
     moodleApiRequest,
 } from './GenericFunctions';
 
+// Import version info
+import { VERSION_INFO } from './version';
+
 // Helper function to flatten object for Moodle API
 function flattenObject(obj: IDataObject, prefix: string): IDataObject {
     const flattened: IDataObject = {};
@@ -34,7 +37,7 @@ export class Moodle implements INodeType {
         group: ['transform'],
         version: 1,
         subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-        description: 'Interact with Moodle LMS - Complete Integration (v2024.06.05.15:00)',
+        description: `Interact with Moodle LMS - Complete Integration (v${VERSION_INFO.version})`,
         defaults: {
             name: 'Moodle',
         },
@@ -547,7 +550,7 @@ export class Moodle implements INodeType {
                 description: 'User ID to get messages for',
             },
 
-            // ADDITIONAL FIELDS
+            // ADDITIONAL FIELDS - ENHANCED FOR USERS
             {
                 displayName: 'Additional Fields',
                 name: 'additionalFields',
@@ -556,24 +559,172 @@ export class Moodle implements INodeType {
                 default: {},
                 displayOptions: {
                     show: {
-                        resource: ['user', 'course'],
+                        resource: ['user'],
                         operation: ['create', 'update'],
                     },
                 },
                 options: [
                     {
-                        displayName: 'Description',
-                        name: 'description',
+                        displayName: 'Address',
+                        name: 'address',
                         type: 'string',
                         default: '',
-                        description: 'Description field',
+                        description: 'Postal address of the user',
+                    },
+                    {
+                        displayName: 'City',
+                        name: 'city',
+                        type: 'string',
+                        default: '',
+                        description: 'City of the user',
+                    },
+                    {
+                        displayName: 'Country',
+                        name: 'country',
+                        type: 'string',
+                        default: '',
+                        description: 'Country code of the user (e.g., US, GB, FR)',
+                        placeholder: 'US',
                     },
                     {
                         displayName: 'Department',
                         name: 'department',
                         type: 'string',
                         default: '',
-                        description: 'Department field',
+                        description: 'Department of the user',
+                    },
+                    {
+                        displayName: 'Description',
+                        name: 'description',
+                        type: 'string',
+                        typeOptions: {
+                            rows: 4,
+                        },
+                        default: '',
+                        description: 'User description/bio',
+                    },
+                    {
+                        displayName: 'ID Number',
+                        name: 'idnumber',
+                        type: 'string',
+                        default: '',
+                        description: 'An arbitrary ID number for the user (e.g., student ID, employee ID)',
+                    },
+                    {
+                        displayName: 'Institution',
+                        name: 'institution',
+                        type: 'string',
+                        default: '',
+                        description: 'Institution the user belongs to',
+                    },
+                    {
+                        displayName: 'Mobile Phone',
+                        name: 'phone2',
+                        type: 'string',
+                        default: '',
+                        description: 'Mobile phone number of the user',
+                    },
+                    {
+                        displayName: 'Phone',
+                        name: 'phone1',
+                        type: 'string',
+                        default: '',
+                        description: 'Primary phone number of the user',
+                    },
+                    {
+                        displayName: 'Timezone',
+                        name: 'timezone',
+                        type: 'string',
+                        default: '',
+                        description: 'Timezone of the user (e.g., America/New_York, Europe/London, Asia/Tokyo)',
+                        placeholder: 'America/New_York',
+                    },
+                ],
+            },
+
+            // ADDITIONAL FIELDS FOR COURSES
+            {
+                displayName: 'Additional Fields',
+                name: 'additionalFields',
+                type: 'collection',
+                placeholder: 'Add Field',
+                default: {},
+                displayOptions: {
+                    show: {
+                        resource: ['course'],
+                        operation: ['create', 'update'],
+                    },
+                },
+                options: [
+                    {
+                        displayName: 'Description',
+                        name: 'summary',
+                        type: 'string',
+                        typeOptions: {
+                            rows: 4,
+                        },
+                        default: '',
+                        description: 'Course summary/description',
+                    },
+                    {
+                        displayName: 'ID Number',
+                        name: 'idnumber',
+                        type: 'string',
+                        default: '',
+                        description: 'Course ID number for external systems',
+                    },
+                    {
+                        displayName: 'Format',
+                        name: 'format',
+                        type: 'options',
+                        options: [
+                            {
+                                name: 'Topics',
+                                value: 'topics',
+                            },
+                            {
+                                name: 'Weekly',
+                                value: 'weeks',
+                            },
+                            {
+                                name: 'Social',
+                                value: 'social',
+                            },
+                            {
+                                name: 'Single Activity',
+                                value: 'singleactivity',
+                            },
+                        ],
+                        default: 'topics',
+                        description: 'Course format',
+                    },
+                    {
+                        displayName: 'Number of Sections',
+                        name: 'numsections',
+                        type: 'number',
+                        default: 10,
+                        description: 'Number of sections/weeks in the course',
+                    },
+                    {
+                        displayName: 'Start Date',
+                        name: 'startdate',
+                        type: 'dateTime',
+                        default: '',
+                        description: 'Course start date',
+                    },
+                    {
+                        displayName: 'End Date',
+                        name: 'enddate',
+                        type: 'dateTime',
+                        default: '',
+                        description: 'Course end date',
+                    },
+                    {
+                        displayName: 'Visible',
+                        name: 'visible',
+                        type: 'boolean',
+                        default: true,
+                        description: 'Whether the course is visible to students',
                     },
                 ],
             },
@@ -612,7 +763,7 @@ export class Moodle implements INodeType {
     };
 
     async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-        console.log('🚀 MOODLE NODE EXECUTING - Version 2024.06.05.15:00 - COMPREHENSIVE');
+        console.log(`🚀 MOODLE NODE EXECUTING - Version ${VERSION_INFO.version} - Built on ${VERSION_INFO.buildDate}`);
         
         const items = this.getInputData();
         const returnData: INodeExecutionData[] = [];
@@ -717,6 +868,11 @@ export class Moodle implements INodeType {
                                 'userids[0]': userId,
                             }
                         );
+                        
+                        // Handle null response for successful deletion
+                        if (responseData === null || responseData === undefined) {
+                            responseData = { success: true, message: `User ${userId} deleted successfully` };
+                        }
                     }
                 }
 
@@ -752,13 +908,13 @@ export class Moodle implements INodeType {
                             '',
                             {},
                             {
-                                wsfunction: 'core_course_get_course_by_field',
+                                wsfunction: 'core_course_get_courses_by_field',
                                 field: 'id',
-                                'values[0]': courseId,
+                                value: courseId,
                             }
                         );
                         
-                        responseData = responseData[0];
+                        responseData = responseData.courses[0];
                     }
                     
                     if (operation === 'getAll') {
@@ -803,6 +959,11 @@ export class Moodle implements INodeType {
                                 'courseids[0]': courseId,
                             }
                         );
+                        
+                        // Handle null response for successful deletion
+                        if (responseData === null || responseData === undefined) {
+                            responseData = { success: true, message: `Course ${courseId} deleted successfully` };
+                        }
                     }
                     
                     if (operation === 'getEnrolledUsers') {
@@ -814,7 +975,7 @@ export class Moodle implements INodeType {
                             '',
                             {},
                             {
-                                wsfunction: 'core_course_get_enrolled_users',
+                                wsfunction: 'core_enrol_get_enrolled_users',
                                 courseid: courseId,
                             }
                         );

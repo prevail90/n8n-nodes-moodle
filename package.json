@@ -21,12 +21,16 @@
   },
   "main": "index.js",
   "scripts": {
+    "prebuild": "node scripts/generate-version.js",
     "build": "tsc && gulp build:icons",
     "dev": "tsc --watch",
     "format": "prettier nodes credentials --write",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
-    "prepublishOnly": "npm run build && npm run lint -s"
+    "prepublishOnly": "npm run build && npm run lint -c .eslintrc.prepublish.js nodes credentials package.json",
+    "version:patch": "npm version patch && npm run build",
+    "version:minor": "npm version minor && npm run build",
+    "version:major": "npm version major && npm run build"
   },
   "files": [
     "dist"

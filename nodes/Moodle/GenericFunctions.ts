@@ -76,8 +76,14 @@ export async function moodleApiRequest(
             });
         }
         
-        // Check for Moodle API errors
-        if (parsedResponse.exception) {
+        // Check for null response (common for successful delete operations)
+        if (parsedResponse === null || parsedResponse === undefined) {
+            console.log('Received null/undefined response - treating as success');
+            return parsedResponse;
+        }
+        
+        // Check for Moodle API errors only if response is not null
+        if (parsedResponse && typeof parsedResponse === 'object' && parsedResponse.exception) {
             throw new NodeApiError(this.getNode(), {
                 message: parsedResponse.message || 'Moodle API Error',
                 description: `${parsedResponse.debuginfo || ''}\nErrorcode: ${parsedResponse.errorcode || 'Unknown'}`,
@@ -87,6 +93,11 @@ export async function moodleApiRequest(
         
         return parsedResponse;
     } catch (error: any) {
+        // If it's already a NodeApiError, just re-throw it
+        if (error instanceof NodeApiError) {
+            throw error;
+        }
+        
         // Enhanced error handling
         let errorMessage = 'Unknown error occurred';
         let errorDescription = '';
